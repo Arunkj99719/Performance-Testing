@@ -1,18 +1,7 @@
 pipeline {
     agent any
 
-    // Parameterized pipeline
-    parameters {
-        string(name: 'JMETER_SCRIPT', defaultValue: 'Blazedemo_Script_4Dec.jmx', description: 'Enter the JMeter script to run from the repo')
-    }
-
-    environment {
-        // Update JMETER_HOME to your local JMeter path
-        JMETER_HOME = 'E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3'
-    }
-
     stages {
-
         stage('Checkout') {
             steps {
                 echo "Checking out Sample_Script branch from GitHub"
@@ -22,15 +11,8 @@ pipeline {
 
         stage('Run JMeter') {
             steps {
-                echo "Running JMeter script: ${params.JMETER_SCRIPT}"
-
-                bat """
-                REM Delete old report folder if it exists
-                if exist report rmdir /S /Q report
-
-                REM Run JMeter in non-GUI mode
-                "${JMETER_HOME}\\bin\\jmeter.bat" -n -t "%WORKSPACE%\\${params.JMETER_SCRIPT}" -l "%WORKSPACE%\\results.jtl" -e -o "%WORKSPACE%\\report"
-                """
+                echo "Running JMeter script: Blazedemo_Script_4Dec.jmx"
+                bat '"E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\jmeter.bat" -n -t "E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\Blazedemo_Script_4Dec.jmx" -l "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\jenkins_test.csv" -e -o "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\Jenkins_test_report"'
             }
         }
 
@@ -41,7 +23,7 @@ pipeline {
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
                     keepAll: true,
-                    reportDir: 'report',
+                    reportDir: 'E:\\Perf_Test\\RAW_FILES\\OUTPUT\\Jenkins_test_report',
                     reportFiles: 'index.html',
                     reportName: 'JMeter Performance Report'
                 ])
@@ -51,10 +33,10 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline completed successfully!"
+            echo 'Pipeline completed successfully! HTML report published.'
         }
         failure {
-            echo "Pipeline failed. Check console output for errors."
+            echo 'Pipeline failed. Check console output for errors.'
         }
     }
 }
