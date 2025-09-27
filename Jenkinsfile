@@ -7,7 +7,8 @@ pipeline {
     }
 
     environment {
-        JMETER_HOME = 'C:\\apache-jmeter-5.6' // Update to your JMeter installation path
+        // Update JMETER_HOME to your local JMeter path
+        JMETER_HOME = 'E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3'
     }
 
     stages {
@@ -27,8 +28,8 @@ pipeline {
                 REM Delete old report folder if it exists
                 if exist report rmdir /S /Q report
 
-                REM Run JMeter in non-GUI mode and generate new HTML report
-                ${JMETER_HOME}\\bin\\jmeter.bat -n -t ${WORKSPACE}\\${JMETER_SCRIPT} -l ${WORKSPACE}\\results.jtl -e -o ${WORKSPACE}\\report
+                REM Run JMeter in non-GUI mode
+                "${JMETER_HOME}\\bin\\jmeter.bat" -n -t "%WORKSPACE%\\${params.JMETER_SCRIPT}" -l "%WORKSPACE%\\results.jtl" -e -o "%WORKSPACE%\\report"
                 """
             }
         }
