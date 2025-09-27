@@ -13,11 +13,14 @@ pipeline {
             steps {
                 echo "Running JMeter script: Blazedemo_Script_4Dec.jmx"
 
-                // Delete old report folder if exists
-                bat 'if exist "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\Jenkins_test_report" rmdir /S /Q "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\Jenkins_test_report"'
+                // Run JMeter inside the Jenkins workspace
+                bat '''
+                REM Delete old report folder if it exists
+                if exist "%WORKSPACE%\\JMeterReport" rmdir /S /Q "%WORKSPACE%\\JMeterReport"
 
-                // Run JMeter in non-GUI mode with JTL and generate HTML report
-                bat '"E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\jmeter.bat" -n -t "E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\Blazedemo_Script_4Dec.jmx" -l "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\jenkins_test.jtl" -e -o "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\Jenkins_test_report"'
+                REM Run JMeter non-GUI mode and generate new HTML report
+                "E:\\Perf_Test\\Performance_Testing_KTDocument\\apache-jmeter-5.6.3\\bin\\jmeter.bat" -n -t "%WORKSPACE%\\Blazedemo_Script_4Dec.jmx" -l "%WORKSPACE%\\JMeterReport\\results.jtl" -e -o "%WORKSPACE%\\JMeterReport"
+                '''
             }
         }
 
@@ -25,23 +28,19 @@ pipeline {
             steps {
                 echo "Publishing JMeter HTML report"
                 publishHTML(target: [
-                    allowMissing: false,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: 'E:\\Perf_Test\\RAW_FILES\\OUTPUT\\Jenkins_test_report',
+                    reportDir: 'JMeterReport',
                     reportFiles: 'index.html',
-                    reportName: 'JMeter Performance Report'
+                    reportName: 'JMeter Performance Report',
+                    keepAll: true,
+                    alwaysLinkToLastBuild: true
                 ])
             }
         }
     }
 
     post {
-        success {
-            echo 'Pipeline completed successfully! HTML report published.'
-        }
-        failure {
-            echo 'Pipeline failed. Check console output for errors.'
+        always {
+            echo "Pipeline finished. Check the console output for details."
         }
     }
 }
