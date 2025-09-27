@@ -1,6 +1,14 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'JMETER_SCRIPT', defaultValue: 'Blazedemo_Script_4Dec.jmx', description: 'Enter the JMeter script to run from the repo')
+    }
+
+    environment {
+        JMETER_HOME = 'C:\\apache-jmeter-5.6' // Update to your JMeter installation path
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -10,7 +18,13 @@ pipeline {
 
         stage('Run JMeter') {
             steps {
-                bat 'jmeter -n -t Blazedemo_Script_4Dec.jmx -l results.jtl -e -o report'
+                bat """
+                REM Delete old report folder if it exists
+                if exist report rmdir /S /Q report
+
+                REM Run JMeter in non-GUI mode and generate new HTML report
+                ${JMETER_HOME}\\bin\\jmeter.bat -n -t ${WORKSPACE}\\${JMETER_SCRIPT} -l ${WORKSPACE}\\results.jtl -e -o ${WORKSPACE}\\report
+                """
             }
         }
 
@@ -28,3 +42,4 @@ pipeline {
         }
     }
 }
+
