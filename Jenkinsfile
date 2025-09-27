@@ -1,6 +1,7 @@
 pipeline {
     agent any
 
+    // Parameterized pipeline
     parameters {
         string(name: 'JMETER_SCRIPT', defaultValue: 'Blazedemo_Script_4Dec.jmx', description: 'Enter the JMeter script to run from the repo')
     }
@@ -10,14 +11,18 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout') {
             steps {
+                echo "Checking out Sample_Script branch from GitHub"
                 git branch: 'Sample_Script', url: 'https://github.com/Arunkj99719/Performance-Testing.git'
             }
         }
 
         stage('Run JMeter') {
             steps {
+                echo "Running JMeter script: ${params.JMETER_SCRIPT}"
+
                 bat """
                 REM Delete old report folder if it exists
                 if exist report rmdir /S /Q report
@@ -30,6 +35,7 @@ pipeline {
 
         stage('Publish Report') {
             steps {
+                echo "Publishing JMeter HTML report"
                 publishHTML(target: [
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
@@ -41,5 +47,13 @@ pipeline {
             }
         }
     }
-}
 
+    post {
+        success {
+            echo "Pipeline completed successfully!"
+        }
+        failure {
+            echo "Pipeline failed. Check console output for errors."
+        }
+    }
+}
