@@ -12,7 +12,12 @@ pipeline {
         stage('Run JMeter') {
             steps {
                 echo "Running JMeter script: Blazedemo_Script_4Dec.jmx"
-                bat '"E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\jmeter.bat" -n -t "E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\Blazedemo_Script_4Dec.jmx" -l "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\jenkins_test.csv" -e -o "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\Jenkins_test_report"'
+
+                // Delete old report folder if exists
+                bat 'if exist "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\Jenkins_test_report" rmdir /S /Q "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\Jenkins_test_report"'
+
+                // Run JMeter in non-GUI mode with JTL and generate HTML report
+                bat '"E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\jmeter.bat" -n -t "E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\Blazedemo_Script_4Dec.jmx" -l "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\jenkins_test.jtl" -e -o "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\Jenkins_test_report"'
             }
         }
 
