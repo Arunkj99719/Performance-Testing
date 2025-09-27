@@ -12,15 +12,7 @@ pipeline {
         stage('Run JMeter') {
             steps {
                 echo "Running JMeter script: Blazedemo_Script_4Dec.jmx"
-
-                // Run JMeter inside the Jenkins workspace
-                bat '''
-                REM Delete old report folder if it exists
-                if exist "%WORKSPACE%\\JMeterReport" rmdir /S /Q "%WORKSPACE%\\JMeterReport"
-
-                REM Run JMeter non-GUI mode and generate new HTML report
-                "E:\\Perf_Test\\Performance_Testing_KTDocument\\apache-jmeter-5.6.3\\bin\\jmeter.bat" -n -t "%WORKSPACE%\\Blazedemo_Script_4Dec.jmx" -l "%WORKSPACE%\\JMeterReport\\results.jtl" -e -o "%WORKSPACE%\\JMeterReport"
-                '''
+                bat '"E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\jmeter.bat" -n -t "E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\Blazedemo_Script_4Dec.jmx" -l "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\jenkins_test.csv" -e -o "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\Jenkins_test_report"'
             }
         }
 
@@ -28,19 +20,23 @@ pipeline {
             steps {
                 echo "Publishing JMeter HTML report"
                 publishHTML(target: [
-                    reportDir: 'JMeterReport',
-                    reportFiles: 'index.html',
-                    reportName: 'JMeter Performance Report',
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
                     keepAll: true,
-                    alwaysLinkToLastBuild: true
+                    reportDir: 'E:\\Perf_Test\\RAW_FILES\\OUTPUT\\Jenkins_test_report',
+                    reportFiles: 'index.html',
+                    reportName: 'JMeter Performance Report'
                 ])
             }
         }
     }
 
     post {
-        always {
-            echo "Pipeline finished. Check the console output for details."
+        success {
+            echo 'Pipeline completed successfully! HTML report published.'
+        }
+        failure {
+            echo 'Pipeline failed. Check console output for errors.'
         }
     }
 }
