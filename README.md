@@ -18,5 +18,5 @@ This project demonstrates automating JMeter performance tests using Jenkins CI/C
 5. View results in generated HTML reports
 
 ## Notes
-- Ensure Jenkins has required plugins: Git, Pipeline, Performance Plugin (optional)
+- Ensure Jenkins has required plugins: Git, Pipeline, CI/CD, Performance Plugin (optional)
 
