@@ -4,6 +4,7 @@ pipeline {
     environment {
         // Unique folder for each build using timestamp
         REPORT_DIR = "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\Jenkins_test_report_${new Date().format('yyyyMMdd_HHmmss')}"
+        ZIP_FILE   = "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\Jenkins_test_report_${BUILD_NUMBER}.zip"
     }
 
     stages {
@@ -30,17 +31,30 @@ pipeline {
             }
         }
 
+        stage('Package Report') {
+            steps {
+                echo "Zipping JMeter report folder"
+                bat """
+                powershell -command "Compress-Archive -Path '${env.REPORT_DIR}\\*' -DestinationPath '${env.ZIP_FILE}' -Force"
+                """
+            }
+        }
+
         stage('Publish Report') {
             steps {
-                echo "Publishing JMeter HTML report from ${env.REPORT_DIR}"
+                echo "Publishing JMeter HTML report"
+
+                // Archive the zipped report
+                archiveArtifacts artifacts: "${env.ZIP_FILE}", fingerprint: true
+
+                // Try to show index.html in Jenkins UI as well
                 publishHTML(target: [
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
                     keepAll: true,
                     reportDir: "${env.REPORT_DIR}",
                     reportFiles: 'index.html',
-                    reportName: "JMeter Performance Report (Build ${BUILD_NUMBER})",
-                    includeResources: true
+                    reportName: "JMeter Performance Report (Build ${BUILD_NUMBER})"
                 ])
             }
         }
@@ -48,7 +62,7 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline completed successfully! HTML report published at: ${env.REPORT_DIR}"
+            echo "Pipeline completed successfully! Report available at: ${env.ZIP_FILE}"
         }
         failure {
             echo 'Pipeline failed. Check console output for errors.'
