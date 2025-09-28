@@ -22,7 +22,7 @@ pipeline {
                 REM === Create report folder ===
                 mkdir "${REPORT_DIR}"
 
-                REM === Run JMeter test ===
+                REM === Run JMeter test with HTML report ===
                 call "E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\jmeter.bat" ^
                  -n -t "${WORKSPACE}\\JMeterScripts\\Blazedemo_Script_4Dec.jmx" ^
                  -l "${CSV_FILE}" ^
@@ -31,29 +31,29 @@ pipeline {
             }
         }
 
-        stage('Archive Report') {
-            steps {
-                echo "Archiving JMeter report folder"
-                archiveArtifacts artifacts: "JMeter_Report_${BUILD_NUMBER}\\**", fingerprint: true
-            }
-        }
-
         stage('Publish HTML Report') {
             steps {
-                echo "Publishing JMeter HTML report"
+                echo "Publishing JMeter HTML report in Jenkins"
                 publishHTML(target: [
                     reportName: "JMeter Performance Report",
-                    reportDir: "${REPORT_DIR}",    // Option A: use the folder JMeter created
-                    reportFiles: 'index.html',     // JMeter's main report file
+                    reportDir: "${REPORT_DIR}",
+                    reportFiles: 'index.html',
                     alwaysLinkToLastBuild: true,
                     keepAll: true
                 ])
             }
         }
 
+        stage('Archive Artifacts') {
+            steps {
+                echo "Archiving CSV results for reference"
+                archiveArtifacts artifacts: "jenkins_test_${BUILD_NUMBER}.csv", fingerprint: true
+            }
+        }
+
         stage('Cleanup Old Reports') {
             steps {
-                echo "Cleaning up old reports except the current build"
+                echo "Cleaning up old report folders except the current build"
                 bat """
                 powershell -command "Get-ChildItem -Path '${WORKSPACE}' -Directory | Where-Object { \$_.Name -like 'JMeter_Report_*' -and \$_.Name -ne 'JMeter_Report_${BUILD_NUMBER}' } | Remove-Item -Recurse -Force"
                 """
@@ -63,7 +63,7 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline completed successfully! Report folder: ${REPORT_DIR}"
+            echo "Pipeline completed successfully! Report available: ${REPORT_DIR}"
         }
         failure {
             echo "Pipeline failed. Check console output for errors."
