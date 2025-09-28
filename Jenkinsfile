@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // Generate a unique folder name for each build using timestamp
+        // Unique folder for each build using timestamp
         REPORT_DIR = "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\Jenkins_test_report_${new Date().format('yyyyMMdd_HHmmss')}"
     }
 
@@ -39,7 +39,8 @@ pipeline {
                     keepAll: true,
                     reportDir: "${env.REPORT_DIR}",
                     reportFiles: 'index.html',
-                    reportName: "JMeter Performance Report (Build ${BUILD_NUMBER})"
+                    reportName: "JMeter Performance Report (Build ${BUILD_NUMBER})",
+                    includeResources: true
                 ])
             }
         }
