@@ -70,5 +70,3 @@ pipeline {
         }
     }
 }
-
-this is my working jenkins file add to this 
