@@ -2,10 +2,11 @@ pipeline {
     agent any
 
     environment {
-        // Unique folder for each build using timestamp inside workspace
+        // Workspace folder for JMeter HTML report
         REPORT_DIR = "${WORKSPACE}\\JMeter_Report_${BUILD_NUMBER}"
+        CSV_FILE   = "${WORKSPACE}\\jenkins_test_${BUILD_NUMBER}.csv"
         ZIP_FILE   = "${WORKSPACE}\\Jenkins_test_report_${BUILD_NUMBER}.zip"
-        OUTPUT_DIR = "E:\\Perf_Test\\RAW_FILES\\OUTPUT"
+        OUTPUT_DIR = "${WORKSPACE}\\Old_Reports"
     }
 
     stages {
@@ -24,40 +25,17 @@ pipeline {
                 mkdir "${env.REPORT_DIR}"
 
                 REM === Run JMeter test ===
-                "E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\jmeter.bat" ^
-                 -n -t "E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\Blazedemo_Script_4Dec.jmx" ^
-                 -l "${env.WORKSPACE}\\jenkins_test_${BUILD_NUMBER}.csv" ^
+                "E:\\Perf_Test\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\jmeter.bat" ^
+                 -n -t "E:\\Perf_Test\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\Blazedemo_Script_4Dec.jmx" ^
+                 -l "${env.CSV_FILE}" ^
                  -e -o "${env.REPORT_DIR}"
                 """
             }
         }
 
-        stage('Package Report') {
+        stage('Publish HTML Report') {
             steps {
-                echo "Zipping JMeter report folder"
-                bat """
-                powershell -command "Compress-Archive -Path '${env.REPORT_DIR}\\*' -DestinationPath '${env.ZIP_FILE}' -Force"
-                """
-            }
-        }
-
-        stage('Cleanup Old Reports') {
-            steps {
-                echo "Deleting old report folders in ${env.OUTPUT_DIR}, keeping only the latest"
-                bat """
-                powershell -command "Get-ChildItem -Path '${env.OUTPUT_DIR}' -Directory | Where-Object { \$_.Name -like 'Jenkins_test_report_*' } | Remove-Item -Recurse -Force"
-                """
-            }
-        }
-
-        stage('Publish Report') {
-            steps {
-                echo "Publishing JMeter HTML report"
-
-                // Archive the zip inside workspace
-                archiveArtifacts artifacts: "Jenkins_test_report_${BUILD_NUMBER}.zip", fingerprint: true
-
-                // Publish HTML for quick preview
+                echo "Publishing JMeter HTML report inside Jenkins"
                 publishHTML(target: [
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
@@ -68,11 +46,30 @@ pipeline {
                 ])
             }
         }
+
+        stage('Archive Report') {
+            steps {
+                echo "Zipping and archiving report folder"
+                bat """
+                powershell -command "Compress-Archive -Path '${env.REPORT_DIR}\\*' -DestinationPath '${env.ZIP_FILE}' -Force"
+                """
+                archiveArtifacts artifacts: "Jenkins_test_report_${BUILD_NUMBER}.zip", fingerprint: true
+            }
+        }
+
+        stage('Cleanup Old Reports') {
+            steps {
+                echo "Cleaning up old report folders in workspace, keeping only the latest"
+                bat """
+                powershell -command "Get-ChildItem -Path '${WORKSPACE}' -Directory | Where-Object { \$_.Name -like 'JMeter_Report_*' -and \$_.Name -ne 'JMeter_Report_${BUILD_NUMBER}' } | Remove-Item -Recurse -Force"
+                """
+            }
+        }
     }
 
     post {
         success {
-            echo "Pipeline completed successfully! Report archived at: ${ZIP_FILE}"
+            echo "Pipeline completed successfully! HTML report is viewable in Jenkins and archived as ${ZIP_FILE}"
         }
         failure {
             echo 'Pipeline failed. Check console output for errors.'
