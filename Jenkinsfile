@@ -2,10 +2,15 @@ pipeline {
     agent any
 
     environment {
-        JMETER_BIN  = "E:\\Perf_Test\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\jmeter.bat"
-        JMETER_JMX  = "E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\Blazedemo_Script_4Dec.jmx"
+        // JMeter installation path (update if installed elsewhere)
+        JMETER_BIN  = "E:\\Perf_Test\\Perf_JMeter\\apache-jmeter-5.6.3\\bin\\jmeter.bat"
+
+        // Report and CSV inside Jenkins workspace
         REPORT_DIR  = "${WORKSPACE}\\JMeter_Report_${BUILD_NUMBER}"
         CSV_FILE    = "${WORKSPACE}\\jenkins_test_${BUILD_NUMBER}.csv"
+
+        // Repository-relative JMX path
+        JMX_PATH    = "${WORKSPACE}\\JMeterScripts\\Blazedemo_Script_4Dec.jmx"
     }
 
     stages {
@@ -18,13 +23,13 @@ pipeline {
 
         stage('Run JMeter') {
             steps {
-                echo "Running JMeter script: ${JMETER_JMX}"
+                echo "Running JMeter script: ${JMX_PATH}"
                 bat """
                 REM === Create report folder in workspace ===
                 mkdir "${REPORT_DIR}"
 
                 REM === Run JMeter test ===
-                "${JMETER_BIN}" -n -t "${JMETER_JMX}" -l "${CSV_FILE}" -e -o "${REPORT_DIR}"
+                "${JMETER_BIN}" -n -t "${JMX_PATH}" -l "${CSV_FILE}" -e -o "${REPORT_DIR}"
                 """
             }
         }
