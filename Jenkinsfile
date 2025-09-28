@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        // Unique folder for each build using timestamp
-        REPORT_DIR = "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\Jenkins_test_report_${new Date().format('yyyyMMdd_HHmmss')}"
+        // Unique folder for each build using timestamp inside workspace
+        REPORT_DIR = "${WORKSPACE}\\JMeter_Report_${BUILD_NUMBER}"
         ZIP_FILE   = "${WORKSPACE}\\Jenkins_test_report_${BUILD_NUMBER}.zip"
         OUTPUT_DIR = "E:\\Perf_Test\\RAW_FILES\\OUTPUT"
     }
@@ -20,13 +20,13 @@ pipeline {
             steps {
                 echo "Running JMeter script: Blazedemo_Script_4Dec.jmx"
                 bat """
-                REM === Create unique report folder ===
+                REM === Create report folder in workspace ===
                 mkdir "${env.REPORT_DIR}"
 
                 REM === Run JMeter test ===
                 "E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\jmeter.bat" ^
                  -n -t "E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\Blazedemo_Script_4Dec.jmx" ^
-                 -l "E:\\Perf_Test\\RAW_FILES\\OUTPUT\\jenkins_test_${BUILD_NUMBER}.csv" ^
+                 -l "${env.WORKSPACE}\\jenkins_test_${BUILD_NUMBER}.csv" ^
                  -e -o "${env.REPORT_DIR}"
                 """
             }
@@ -43,9 +43,9 @@ pipeline {
 
         stage('Cleanup Old Reports') {
             steps {
-                echo "Deleting old report folders in ${env.OUTPUT_DIR}, keeping only the current build"
+                echo "Deleting old report folders in ${env.OUTPUT_DIR}, keeping only the latest"
                 bat """
-                powershell -command "Get-ChildItem -Path '${env.OUTPUT_DIR}' -Directory | Where-Object { \$_.Name -like 'Jenkins_test_report_*' -and \$_.FullName -ne '${env.REPORT_DIR}' } | Remove-Item -Recurse -Force"
+                powershell -command "Get-ChildItem -Path '${env.OUTPUT_DIR}' -Directory | Where-Object { \$_.Name -like 'Jenkins_test_report_*' } | Remove-Item -Recurse -Force"
                 """
             }
         }
