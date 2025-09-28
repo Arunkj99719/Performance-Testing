@@ -2,11 +2,14 @@ pipeline {
     agent any
 
     environment {
-        // Workspace folder for JMeter HTML report
-        REPORT_DIR = "${WORKSPACE}\\JMeter_Report_${BUILD_NUMBER}"
-        CSV_FILE   = "${WORKSPACE}\\jenkins_test_${BUILD_NUMBER}.csv"
-        ZIP_FILE   = "${WORKSPACE}\\Jenkins_test_report_${BUILD_NUMBER}.zip"
-        OUTPUT_DIR = "${WORKSPACE}\\Old_Reports"
+        // Update this path if your JMeter installation is elsewhere
+        JMETER_BIN   = "E:\\Perf_Test\\Perf_JMeter\\apache-jmeter-5.6.3\\bin\\jmeter.bat"
+        JMETER_SCRIPT = "${WORKSPACE}\\JMeterScripts\\Blazedemo_Script_4Dec.jmx"
+
+        // Workspace-based unique report folder for each build
+        REPORT_DIR   = "${WORKSPACE}\\JMeter_Report_${BUILD_NUMBER}"
+        CSV_FILE     = "${WORKSPACE}\\jenkins_test_${BUILD_NUMBER}.csv"
+        ZIP_FILE     = "${WORKSPACE}\\JMeter_Report_${BUILD_NUMBER}.zip"
     }
 
     stages {
@@ -19,16 +22,13 @@ pipeline {
 
         stage('Run JMeter') {
             steps {
-                echo "Running JMeter script: Blazedemo_Script_4Dec.jmx"
+                echo "Running JMeter script: ${JMETER_SCRIPT}"
                 bat """
                 REM === Create report folder in workspace ===
-                mkdir "${env.REPORT_DIR}"
+                mkdir "${REPORT_DIR}"
 
                 REM === Run JMeter test ===
-                "E:\\Perf_Test\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\jmeter.bat" ^
-                 -n -t "E:\\Perf_Test\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\Blazedemo_Script_4Dec.jmx" ^
-                 -l "${env.CSV_FILE}" ^
-                 -e -o "${env.REPORT_DIR}"
+                "${JMETER_BIN}" -n -t "${JMETER_SCRIPT}" -l "${CSV_FILE}" -e -o "${REPORT_DIR}"
                 """
             }
         }
@@ -40,7 +40,7 @@ pipeline {
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
                     keepAll: true,
-                    reportDir: "${env.REPORT_DIR}",
+                    reportDir: "${REPORT_DIR}",
                     reportFiles: 'index.html',
                     reportName: "JMeter Performance Report (Build ${BUILD_NUMBER})"
                 ])
@@ -49,19 +49,19 @@ pipeline {
 
         stage('Archive Report') {
             steps {
-                echo "Zipping and archiving report folder"
+                echo "Zipping JMeter report for download"
                 bat """
-                powershell -command "Compress-Archive -Path '${env.REPORT_DIR}\\*' -DestinationPath '${env.ZIP_FILE}' -Force"
+                powershell -command "Compress-Archive -Path '${REPORT_DIR}\\*' -DestinationPath '${ZIP_FILE}' -Force"
                 """
-                archiveArtifacts artifacts: "Jenkins_test_report_${BUILD_NUMBER}.zip", fingerprint: true
+                archiveArtifacts artifacts: "JMeter_Report_${BUILD_NUMBER}.zip", fingerprint: true
             }
         }
 
         stage('Cleanup Old Reports') {
             steps {
-                echo "Cleaning up old report folders in workspace, keeping only the latest"
+                echo "Deleting old report folders in workspace, keeping only the current build"
                 bat """
-                powershell -command "Get-ChildItem -Path '${WORKSPACE}' -Directory | Where-Object { \$_.Name -like 'JMeter_Report_*' -and \$_.Name -ne 'JMeter_Report_${BUILD_NUMBER}' } | Remove-Item -Recurse -Force"
+                powershell -command "Get-ChildItem -Path '${WORKSPACE}' -Directory | Where-Object { \$_.Name -like 'JMeter_Report_*' -and \$_.FullName -ne '${REPORT_DIR}' } | Remove-Item -Recurse -Force"
                 """
             }
         }
@@ -69,7 +69,7 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline completed successfully! HTML report is viewable in Jenkins and archived as ${ZIP_FILE}"
+            echo "Pipeline completed successfully! Report archived at: ${ZIP_FILE}"
         }
         failure {
             echo 'Pipeline failed. Check console output for errors.'
