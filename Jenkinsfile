@@ -2,11 +2,9 @@ pipeline {
     agent any
 
     environment {
-        JMETER_BIN  = "E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\jmeter.bat"
-        JMX_PATH    = "${WORKSPACE}\\JMeterScripts\\Blazedemo_Script_4Dec.jmx"
-        REPORT_DIR  = "${WORKSPACE}\\JMeter_Report_${BUILD_NUMBER}"
-        CSV_FILE    = "${WORKSPACE}\\jenkins_test_${BUILD_NUMBER}.csv"
-        ZIP_FILE    = "${WORKSPACE}\\JMeter_Report_${BUILD_NUMBER}.zip"
+        // Unique folder for each build
+        REPORT_DIR = "${WORKSPACE}\\JMeter_Report_${BUILD_NUMBER}"
+        ZIP_FILE   = "${WORKSPACE}\\JMeter_Report_${BUILD_NUMBER}.zip"
     }
 
     stages {
@@ -19,24 +17,24 @@ pipeline {
 
         stage('Run JMeter') {
             steps {
-                echo "Running JMeter script: ${JMX_PATH}"
+                echo "Running JMeter script: Blazedemo_Script_4Dec.jmx"
                 bat """
-                REM === Create report folder in workspace ===
+                REM === Create report folder ===
                 mkdir "${REPORT_DIR}"
 
                 REM === Run JMeter test ===
-                "${JMETER_BIN}" -n -t "${JMX_PATH}" -l "${CSV_FILE}" -e -o "${REPORT_DIR}"
+                call "E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\jmeter.bat" ^
+                 -n -t "${WORKSPACE}\\JMeterScripts\\Blazedemo_Script_4Dec.jmx" ^
+                 -l "${WORKSPACE}\\jenkins_test_${BUILD_NUMBER}.csv" ^
+                 -e -o "${REPORT_DIR}"
                 """
             }
         }
 
         stage('Archive Report') {
             steps {
-                echo "Zipping JMeter report folder"
-                bat """
-                powershell -command "Compress-Archive -Path '${REPORT_DIR}\\*' -DestinationPath '${ZIP_FILE}' -Force"
-                """
-                archiveArtifacts artifacts: "JMeter_Report_${BUILD_NUMBER}.zip", fingerprint: true
+                echo "Archiving JMeter report folder"
+                archiveArtifacts artifacts: "JMeter_Report_${BUILD_NUMBER}\\**", fingerprint: true
             }
         }
 
@@ -44,21 +42,20 @@ pipeline {
             steps {
                 echo "Publishing JMeter HTML report"
                 publishHTML(target: [
-                    allowMissing: false,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
+                    reportName: "JMeter Performance Report",
                     reportDir: "${REPORT_DIR}",
                     reportFiles: 'index.html',
-                    reportName: "JMeter Performance Report (Build ${BUILD_NUMBER})"
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true
                 ])
             }
         }
 
         stage('Cleanup Old Reports') {
             steps {
-                echo "Deleting old report folders, keeping only current build"
+                echo "Cleaning up old reports except the current build"
                 bat """
-                powershell -command "Get-ChildItem -Path '${WORKSPACE}' -Directory | Where-Object { \$_.Name -like 'JMeter_Report_*' -and \$_.FullName -ne '${REPORT_DIR}' } | Remove-Item -Recurse -Force"
+                powershell -command "Get-ChildItem -Path '${WORKSPACE}' -Directory | Where-Object { \$_.Name -like 'JMeter_Report_*' -and \$_.Name -ne 'JMeter_Report_${BUILD_NUMBER}' } | Remove-Item -Recurse -Force"
                 """
             }
         }
@@ -66,10 +63,10 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline completed successfully! Report archived at: ${ZIP_FILE}"
+            echo "Pipeline completed successfully! Report folder: ${REPORT_DIR}"
         }
         failure {
-            echo 'Pipeline failed. Check console output for errors.'
+            echo "Pipeline failed. Check console output for errors."
         }
     }
 }
