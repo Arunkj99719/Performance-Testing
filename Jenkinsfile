@@ -2,15 +2,11 @@ pipeline {
     agent any
 
     environment {
-        // JMeter installation path (update if installed elsewhere)
-        JMETER_BIN  = "E:\\Perf_Test\\Perf_JMeter\\apache-jmeter-5.6.3\\bin\\jmeter.bat"
-
-        // Report and CSV inside Jenkins workspace
+        JMETER_BIN  = "E:\\Perf_Test\\Performance_Testing_KTDocument\\Performance_Testing_KTDocument\\Perf_training\\apache-jmeter-5.6.3\\bin\\jmeter.bat"
+        JMX_PATH    = "${WORKSPACE}\\JMeterScripts\\Blazedemo_Script_4Dec.jmx"
         REPORT_DIR  = "${WORKSPACE}\\JMeter_Report_${BUILD_NUMBER}"
         CSV_FILE    = "${WORKSPACE}\\jenkins_test_${BUILD_NUMBER}.csv"
-
-        // Repository-relative JMX path
-        JMX_PATH    = "${WORKSPACE}\\JMeterScripts\\Blazedemo_Script_4Dec.jmx"
+        ZIP_FILE    = "${WORKSPACE}\\JMeter_Report_${BUILD_NUMBER}.zip"
     }
 
     stages {
@@ -34,6 +30,16 @@ pipeline {
             }
         }
 
+        stage('Archive Report') {
+            steps {
+                echo "Zipping JMeter report folder"
+                bat """
+                powershell -command "Compress-Archive -Path '${REPORT_DIR}\\*' -DestinationPath '${ZIP_FILE}' -Force"
+                """
+                archiveArtifacts artifacts: "JMeter_Report_${BUILD_NUMBER}.zip", fingerprint: true
+            }
+        }
+
         stage('Publish HTML Report') {
             steps {
                 echo "Publishing JMeter HTML report"
@@ -47,11 +53,20 @@ pipeline {
                 ])
             }
         }
+
+        stage('Cleanup Old Reports') {
+            steps {
+                echo "Deleting old report folders, keeping only current build"
+                bat """
+                powershell -command "Get-ChildItem -Path '${WORKSPACE}' -Directory | Where-Object { \$_.Name -like 'JMeter_Report_*' -and \$_.FullName -ne '${REPORT_DIR}' } | Remove-Item -Recurse -Force"
+                """
+            }
+        }
     }
 
     post {
         success {
-            echo "Pipeline completed successfully! HTML report is available in Jenkins."
+            echo "Pipeline completed successfully! Report archived at: ${ZIP_FILE}"
         }
         failure {
             echo 'Pipeline failed. Check console output for errors.'
